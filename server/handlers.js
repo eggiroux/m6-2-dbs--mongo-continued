@@ -55,19 +55,33 @@ const bookSeat = async (req, res) => {
     assert.equal(1, r.matchedCount);
     assert.equal(1, r.modifiedCount);
 
-    // if (!seat) {
-    //   return res.status(404).json({
-    //     status: "error",
-    //     message: "invalid seat query",
-    //   });
-    // }
-    // if (seat.isBooked) {
-    //   console.log(seat);
-    //   return res.status(400).json({
-    //     status: "error",
-    //     message: "seat is already booked",
-    //   });
-    // }
+    res.status(200).json({
+      status: 200,
+      success: true,
+    });
+  } catch (err) {
+    res.status(500).json({ status: 500, message: err.message });
+  }
+  client.close();
+};
+
+const resetSeat = async (req, res) => {
+  const client = await MongoClient(MONGO_URI, options);
+  const { seatId } = req.body;
+
+  try {
+    await client.connect();
+    const db = client.db("exercise_62");
+
+    const query = { _id: seatId };
+    const newValues = {
+      $set: { isBooked: false, customer: null },
+    };
+
+    const r = await db.collection("seats").updateOne(query, newValues);
+    // console.log(r);
+    assert.equal(1, r.matchedCount);
+    assert.equal(1, r.modifiedCount);
 
     res.status(200).json({
       status: 200,
@@ -79,4 +93,39 @@ const bookSeat = async (req, res) => {
   client.close();
 };
 
-module.exports = { getSeats, bookSeat };
+const updateCustomerInfo = async (req, res) => {
+  const client = await MongoClient(MONGO_URI, options);
+  const { seatId, fullName, email } = req.body;
+
+  if (!fullName || !email) {
+    return res.status(400).json({
+      status: 400,
+      message: "Please provide customer information!",
+    });
+  }
+
+  try {
+    await client.connect();
+    const db = client.db("exercise_62");
+
+    const query = { _id: seatId };
+    const newValues = {
+      $set: { customer: { fullName, email } },
+    };
+
+    const r = await db.collection("seats").updateOne(query, newValues);
+    // console.log(r);
+    assert.equal(1, r.matchedCount);
+    assert.equal(1, r.modifiedCount);
+
+    res.status(200).json({
+      status: 200,
+      success: true,
+    });
+  } catch (err) {
+    res.status(500).json({ status: 500, message: err.message });
+  }
+  client.close();
+};
+
+module.exports = { getSeats, bookSeat, resetSeat, updateCustomerInfo };
